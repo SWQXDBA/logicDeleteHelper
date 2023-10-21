@@ -1,6 +1,8 @@
 package org.swqxdba.logicDelete;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class LogicDeleteConfigExample implements LogicDeleteConfig {
@@ -25,7 +27,7 @@ public class LogicDeleteConfigExample implements LogicDeleteConfig {
     }
 
     @Override
-    public String doLogicDeleteSql(String tableName) {
-        return "update " + tableName + " set deleted = 1,version = version+1";
+    public List<String> doLogicDeleteSql(String tableName) {
+        return Arrays.asList(tableName+".deleted = 1","version = version+1");
     }
 }

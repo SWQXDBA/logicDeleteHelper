@@ -10,9 +10,10 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Set;
 
-public class LoginDeleteUtil {
+public class LogicDeleteUtil {
 
     /**
+     * SQLExprTableSource 通常为数据库中的一张表。如Person p
      * 根据表名来判断是否需要附加条件。必须传入原始的表名 而不是别名。
      */
     public static boolean needHandlerCondition(SQLExprTableSource tableSource, SQLExpr condition, LogicDeleteConfig filter) {
@@ -45,7 +46,7 @@ public class LoginDeleteUtil {
                 //fields.remove(((SQLIdentifierExpr) one).getName());
 
             } else if (one instanceof SQLPropertyExpr) { //指的是select * from person where person.deleted = 0 此时deleted有一个前缀
-               // 当表有别名时 one的owner的名字就是表的别名 否则one的owner的名字为表名。
+                // 当表有别名时 one的owner的名字就是表的别名 否则one的owner的名字为表名。
                 String alias = tableSource.getAlias();
                 if (alias == null) {
                     alias = tableName;
@@ -61,4 +62,9 @@ public class LoginDeleteUtil {
         //全部条件满足(为空了) 则不做替换，不为空则做替换。
         return !fields.isEmpty();
     }
+
+
+
+
+
 }
