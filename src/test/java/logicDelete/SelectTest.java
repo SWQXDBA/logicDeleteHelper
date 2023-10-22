@@ -95,6 +95,14 @@ public class SelectTest {
         Assertions.assertEquals("select * from person p where exists ( select * from school where p.school_id = school.id and school.deleted = 0 ) and p.deleted = 0", handler);
     }
 
+    //not exist
+    @Test
+    void notExistSqlTest() {
+        String sql = "select * from person p where not exists (select * from school where p.school_id = school.id)";
+        final String handler = logicDeleteHandler.processSql(sql);
+        Assertions.assertEquals("select * from person p where not exists ( select * from school where p.school_id = school.id and school.deleted = 0 ) and p.deleted = 0", handler);
+    }
+
     @Test
     void groupByTest(){
         String sql = "select p.name, max(p.age) from person p group by p.name order by max(p.age) desc";

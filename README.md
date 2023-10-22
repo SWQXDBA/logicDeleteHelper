@@ -12,6 +12,47 @@
 您需要手动实现一个配置类：`LogicDeleteConfig`  
 有一个示例实现： `LogicDeleteConfigExample` 您可以参考它
 ```java
+package org.swqxdba.logicDelete;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+public class LogicDeleteConfigExample implements LogicDeleteConfig {
+    @Override
+    public boolean shouldInterceptSql(String sql) {
+        return true;
+    }
+
+    @Override
+    public String filterDataSql(String tableOrAliasName) {
+        return tableOrAliasName + ".deleted = 0";
+    }
+
+    @Override
+    public boolean shouldInterceptTable(String tableName) {
+        return true;
+    }
+
+    @Override
+    public Set<String> logicDeleteDependentFields(String tableName) {
+        return new HashSet<String>(){{add("deleted");}};
+    }
+
+    @Override
+    public List<String> doLogicDeleteSql(String tableOrAliasName) {
+        return Arrays.asList(tableOrAliasName+".deleted = 1","version = version+1");
+    }
+}
+
+```
+在这个配置中，我们规定了所有表的逻辑删除字段为deleted,   
+逻辑删除的判断条件为 table.deleted = 0    
+执行逻辑删除时 需要把table.delete 设置为1，version设置为version+1  
+
+接下来配置这个数据源给项目使用。
+```java
 class Demo{
     public DataSource wrapper(DataSource dataSource){
         LogicDeleteConfig config = new LogicDeleteConfigExample();
@@ -37,9 +78,38 @@ select语句中 会给表拼接条件。
 * 默认join    (如select * from table,table2)
 
 此外 exists,各种嵌套子查询语句也支持。
+
+示例:
+```java
+    @Test
+    void subQueryTest() {
+        //注意这里有意地在left后面的on中调换了条件的顺序 来检测是否挑选了合适的表来添加条件。
+        //left outer join会被替换成 left join
+        String sql = "select * from (select id from person) t where t.id > 50";
+        final String handler = logicDeleteHandler.processSql(sql);
+        Assertions.assertEquals("select * from ( select id from person " +
+                "where person.deleted = 0 ) t " +
+                "where t.id > 50", handler);
+    }
+
+```
+
 ## update语句
 update语句会在where中拼接上逻辑删除条件，避免逻辑删除的数据被意外更新。
-支持基本的多表update
+支持基本的多表update  
+
+示例:
+```java
+    @Test
+    public void simpleUpdateTest(){
+        String sql = "update person set name = ? where id > 1";
+        final String handler = logicDeleteHandler.processSql(sql);
+        Assertions.assertEquals("update person set name = ? where id > 1 " +
+                "and person.deleted = 0", handler);
+    }
+
+```
+
 ## delete
 
 delete将被改写成update语句。  
@@ -50,20 +120,37 @@ delete语句的改写支持多张表,如delete a,b from a,b where xxx
 不支持在delete中进行groupBy join limit等操作。  
 *尽量别在delete中搞骚操作。保持简单。*
 
+示例:
+```java
+    @Test
+    public void deleteFromTest(){
+        String sql = "delete from person where person.id > 5";
+        final String handler = logicDeleteHandler.processSql(sql);
+        Assertions.assertEquals("update person " +
+                "set person.deleted = 1, version = version + 1 " +
+                "where person.id > 5 and person.deleted = 0", handler);
+    }
+
+```
+注意，这里对person拼接了逻辑删除的查询条件，保证已被逻辑删除的数据不会被该update影响。
+
 ## 自动忽略手动指定的条件
 
+### 示例1
 如果您手动在where/on子句中指定了逻辑删除所依赖字段  
-(LogicDeleteConfig.logicDeleteDependentFields)  
-的条件，那么这个表的条件不会被改写：
+(LogicDeleteConfig.logicDeleteDependentFields)的条件，  
+那么这个表的条件不会被改写：
 
----
-select * from person where person.deleted = 0  
+>select * from person where person.deleted = 0  
 此时检测到指定了person.delete字段 所以不会改写 (实际上会重新生成sql 但是逻辑不变)
----
-select * from person,student where person.deleted = 0
-> 改写sql: select * from person,student where person.deleted = 0 and ***student.deleted = 0***
 
-由于只有person表存在手动指定的逻辑删除字段条件，而student表没有，所以会进行改写，给student表添加条件。
+### 示例2
+由于只有person表存在手动指定的逻辑删除字段条件，而student表没有，
+所以会进行改写，给student表添加条件:
+
+>select * from person,student where person.deleted = 0  
+改写sql: select * from person,student where person.deleted = 0 and ***student.deleted = 0***
+
 
 ## 测试sql语句
 如果您对生成的sql逻辑不放心 可以简单地进行测试来获得生成的sql  

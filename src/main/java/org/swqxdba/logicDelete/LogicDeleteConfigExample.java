@@ -12,8 +12,8 @@ public class LogicDeleteConfigExample implements LogicDeleteConfig {
     }
 
     @Override
-    public String filterDataSql(String tableName) {
-        return tableName + ".deleted = 0";
+    public String filterDataSql(String tableOrAliasName) {
+        return tableOrAliasName + ".deleted = 0";
     }
 
     @Override
@@ -27,7 +27,7 @@ public class LogicDeleteConfigExample implements LogicDeleteConfig {
     }
 
     @Override
-    public List<String> doLogicDeleteSql(String tableName) {
-        return Arrays.asList(tableName+".deleted = 1","version = version+1");
+    public List<String> doLogicDeleteSql(String tableOrAliasName) {
+        return Arrays.asList(tableOrAliasName+".deleted = 1","version = version+1");
     }
 }
