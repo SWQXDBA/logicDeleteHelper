@@ -6,6 +6,7 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.swqxdba.logicDelete.util.JLogicUtil;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,6 +47,11 @@ public class LogicDeleteHandler {
     }
 
     public String processSql(String oldSqlLines) {
+
+        //通过threadLocal禁用了逻辑删除
+        if(!JLogicUtil.whetherHandleEnable()){
+            return oldSqlLines;
+        }
 
         if (!config.shouldInterceptSql(oldSqlLines)) {
             return oldSqlLines;
