@@ -61,7 +61,7 @@ class Demo{
     }
 }
 ```
-
+# 改写规则
 ## select语句
 
 select语句中 会给表拼接条件。  
@@ -134,6 +134,8 @@ delete语句的改写支持多张表,如delete a,b from a,b where xxx
 ```
 注意，这里对person拼接了逻辑删除的查询条件，保证已被逻辑删除的数据不会被该update影响。
 
+---
+
 ## 自动忽略手动指定的条件
 
 ### 示例1
@@ -152,6 +154,38 @@ delete语句的改写支持多张表,如delete a,b from a,b where xxx
 改写sql: select * from person,student where person.deleted = 0 and ***student.deleted = 0***
 
 
+## 获取表信息 部分表应用逻辑删除
+如果您想对项目中的部分表应用逻辑删除逻辑，一个简单的判断方法是看看这个表是否有逻辑删除字段。  
+您可以参考`JLogicUtil.resolveMysqlTables()`来获取表信息。
+获取表信息后维护到您的`LogicDeleteConfig`对象中，然后在实现`shouldInterceptTable`方法中进行判断
+
+伪代码例子: 
+```java
+import com.alibaba.druid.sql.ast.statement.SQLShowOutlinesStatement;
+
+class Demo {
+    public DataSource wrapper(DataSource dataSource) {
+        LogicDeleteConfig config = new LogicDeleteConfigExample() {
+            Map<String, List<String>> tableFields;
+            {
+                tableFields = LogicUtil.resolveMysqlTables(dataSource.getConnection());
+            }
+            @Override
+            public boolean shouldInterceptTable(String tableName){
+                for(String column:tableFields.get(tableName)){
+                    //如果有deleted字段 则应用逻辑删除
+                    if(column.equals("deleted")){
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
+        LogicDeleteHandler handler = new LogicDeleteHandler(config, DbType.mysql);
+        LogicDeleteDatasource logicDeleteDatasource = new LogicDeleteDatasource(dataSource, handler);
+    }
+}
+```
 ## 测试sql语句
 如果您对生成的sql逻辑不放心 可以简单地进行测试来获得生成的sql  
 通过LogicDeleteHandler.processSql来对一条sql进行改写 返回改写后的sql

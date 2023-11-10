@@ -1,6 +1,10 @@
 package org.swqxdba.logicDelete.util;
 
-import java.util.concurrent.Callable;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 public class JLogicUtil {
@@ -43,5 +47,38 @@ public class JLogicUtil {
      */
     public static void setHandleEnableState(boolean enableState) {
         JLogicThreadLocal.enableHandle.set(enableState);
+    }
+
+    public static Map<String, List<String>> resolveMysqlTables(Connection connection) {
+        try {
+            DatabaseMetaData metaData = connection.getMetaData();
+            ResultSet columns = metaData.getColumns(null, null, null, null);
+
+            Map<String, List<String>> tableColumns = new HashMap<>();
+            while (columns.next()) {
+                String tableName = columns.getString("TABLE_NAME");
+                List<String> columnsList = tableColumns.computeIfAbsent(tableName, k -> new ArrayList<>());
+                columnsList.add(columns.getString("COLUMN_NAME"));
+            }
+            return tableColumns;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static void printRows(ResultSet resultSet) {
+        try {
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            int columnCount = metaData.getColumnCount();
+            while (resultSet.next()) {
+                for (int i = 0; i < columnCount; i++) {
+                    String columnName = metaData.getColumnLabel(i + 1);
+                    String value = resultSet.getString(i + 1);
+                    System.out.println(columnName + ":" + value);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

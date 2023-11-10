@@ -1,9 +1,11 @@
 package org.swqxdba.logicDelete;
 
+import javax.sql.DataSource;
 import java.util.List;
 import java.util.Set;
 
 public interface LogicDeleteConfig {
+
 
     /**
      * 是否需要对该sql进行处理。 注意 传入的可能是多条合并的sql语句。

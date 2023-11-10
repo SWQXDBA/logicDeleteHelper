@@ -2,9 +2,7 @@ package org.swqxdba.logicDelete;
 
 import javax.sql.DataSource;
 import java.io.PrintWriter;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
+import java.sql.*;
 import java.util.logging.Logger;
 
 public class LogicDeleteDatasource implements DataSource {
@@ -12,6 +10,8 @@ public class LogicDeleteDatasource implements DataSource {
     DataSource dataSource;
 
     LogicDeleteHandler logicDeleteHandler;
+
+
 
     public LogicDeleteDatasource(DataSource dataSource, LogicDeleteHandler logicDeleteHandler) {
         this.dataSource = dataSource;
